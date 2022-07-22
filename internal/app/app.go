@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 )
 
 type Handler struct {
@@ -30,53 +31,53 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 }
 
 func Run(cfg *config.Config) {
-	log.Println(cfg)
-}
-
-func run(cfg *config.Config) {
-	// Init resources
-	mongoConnection, err := mongodb.NewClient("")
-
+	//log.Println(cfg)
+	mongo, err := mongodb.NewClient(cfg.Mongo.URI)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	defer func(ctx context.Context) {
-		if err := mongoConnection.Disconnect(ctx); err != nil {
+	// close the connection to database
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := mongo.Disconnect(ctx); err != nil {
 			log.Fatal(err)
 		}
-	}(context.Background())
+	}()
 
-	// Init repositories
-	userRepo, err := repository.NewUserMongoRepository(mongoConnection)
+	// init of all repositories
+	userRepository, err := repository.NewUserMongoRepository(mongo)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	todoRepo, err := repository.NewTodoRepo(mongoConnection)
+	todoRepository, err := repository.NewTodoRepo(mongo)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// utilities
-	tokenManager, err := auth.NewTokenManager(
-		cfg.Auth.SigningKey,
-		cfg.Auth.AccessTTL,
-		cfg.Auth.RefreshTTL,
-		cfg.Auth.Issuer)
+	// init utilities
+	tokenManager, err := auth.NewTokenManager(cfg.Auth.SigningKey, cfg.Auth.AccessTTL, cfg.Auth.RefreshTTL, cfg.Auth.Issuer)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// Init services
-	_ = services.NewTodoService(userRepo, todoRepo, tokenManager)
-	_ = services.NewUserService(userRepo, todoRepo, tokenManager)
+	// init services
 
-	// init handlers
+	_ = services.NewUserService(userRepository, todoRepository, tokenManager)
+	_ = services.NewTodoService(userRepository, todoRepository, tokenManager)
 
+	// init transport
 	r := NewHandler(fmt.Sprint(cfg))
 
-	// Init server
+	// init server
 	server := &http.Server{
-		Handler: r,
-		Addr:    ":" + cfg.HTTP.Port,
+		Handler:        r,
+		Addr:           ":" + cfg.HTTP.Port,
+		WriteTimeout:   cfg.HTTP.WriteTimeout,
+		ReadTimeout:    cfg.HTTP.ReadTimeout,
+		MaxHeaderBytes: cfg.HTTP.MaxHeaderMegabytes << 20,
 	}
 
 	go func() {
@@ -85,18 +86,19 @@ func run(cfg *config.Config) {
 		}
 	}()
 
+	// graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 
 	<-quit
 
-	log.Println("Start the shutdown...")
+	log.Println("Graceful shutdown is starting...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.App.ShutdownTime)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		log.Println("failed to shutdown:", err)
+		log.Println("failed to shutdown: ", err)
 	}
 
 	log.Println("Server is stopped.")
