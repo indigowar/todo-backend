@@ -8,7 +8,9 @@ services:
     ports:
       - '8000:8000'
     environment:
-      APP_ENV: "dev"
+      APP_ENV: "local"
+      MONGO_URI: "mongodb://mongo:27017"
+      SECRET: "somebody once told me"
     depends_on:
       - mongodb
 
