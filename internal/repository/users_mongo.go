@@ -1,20 +1,22 @@
 package repository
 
 import (
-	"github.com/google/uuid"
-	"github.com/indigowar/todo-backend/internal/domain"
-	"go.mongodb.org/mongo-driver/mongo"
 	"time"
+
+	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/indigowar/todo-backend/internal/domain"
 )
 
-func NewUserMongoRepository(client *mongo.Client) (UserRepo, error) {
+func NewUserMongoRepository(database *mongo.Database) (UserRepo, error) {
 	return &userMongoRepo{
-		client: client,
+		collection: database.Collection("users"),
 	}, nil
 }
 
 type userMongoRepo struct {
-	client *mongo.Client
+	collection *mongo.Collection
 }
 
 func (u userMongoRepo) Get(uuid uuid.UUID) (*domain.User, error) {

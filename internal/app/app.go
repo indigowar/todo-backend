@@ -46,8 +46,10 @@ func Run(cfg *config.Config) {
 		}
 	}()
 
+	database := mongo.Database("todo")
+
 	// init of all repositories
-	userRepository, err := repository.NewUserMongoRepository(mongo)
+	userRepository, err := repository.NewUserMongoRepository(database)
 	if err != nil {
 		log.Fatal(err)
 	}
