@@ -88,18 +88,16 @@ func (u userMongoRepo) Create(user domain.User) error {
 		return errors.New("user already exists")
 	}
 
-	ctx, cancel := context.WithTimeout(5 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
 	defer cancel()
 
 	mUser := mongoUser{
 		UserID: user.Id(),
 		UserName: user.Name(),
 		UserPassword: user.Password(),
-		Token: {
-			Value: user.TokenValue(),
-			ExpiredAt: user.TokenExpiredTime(),
-		},
 	}
+	mUser.Token.Value = user.TokenValue()
+	mUser.Token.ExpiredAt = user.TokenExpiredTime()
 
 	_, err := u.collection.InsertOne(ctx, mUser)
 	if err != nil {
