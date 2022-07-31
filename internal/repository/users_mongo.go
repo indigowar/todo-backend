@@ -80,8 +80,32 @@ func (u userMongoRepo) GetByName(name string) (uuid.UUID, error) {
 }
 
 func (u userMongoRepo) Create(user domain.User) error {
-	//TODO implement me
-	panic("implement me")
+	if _, err := u.Get(user.Id()); err == nil {
+		return errors.New("user already exists")
+	}
+
+	if _, err := u.GetByName(user.Name()); err == nil {
+		return errors.New("user already exists")
+	}
+
+	ctx, cancel := context.WithTimeout(5 * time.Second)
+	defer cancel()
+
+	mUser := mongoUser{
+		UserID: user.Id(),
+		UserName: user.Name(),
+		UserPassword: user.Password(),
+		Token: {
+			Value: user.TokenValue(),
+			ExpiredAt: user.TokenExpiredTime(),
+		},
+	}
+
+	result, err := u.collection.InsertOne(ctx, mUser)
+	if err != nil {
+		return errors.New("internal error, can't insert user")
+	}
+	return nil
 }
 
 func (u userMongoRepo) Delete(uuid uuid.UUID) error {
