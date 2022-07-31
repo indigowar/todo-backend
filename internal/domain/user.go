@@ -14,14 +14,14 @@ type User interface {
 	TokenExpiredTime() time.Time
 }
 
-func NewUser(id uuid.UUID, name, password string) (User, error) {
+func NewUser(id uuid.UUID, name, password string) User {
 	// todo: checks for valid args
 
 	return &user {
 		id: id,
 		name: name,
 		password: password,
-	}, nil
+	}
 }
 
 type user struct {

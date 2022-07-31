@@ -42,10 +42,7 @@ func NewUserService(r repository.UserRepo, todo repository.TodoRepo, a auth.Toke
 func (service *userService) CreateUser(name, password string) (string, error) {
 	// prepare user entity
 	id := uuid.New()
-	user, err := domain.NewUser(id, name, password)
-	if err != nil {
-		return "", err
-	}
+	user := domain.NewUser(id, name, password)
 
 	// create user in storage
 	if err := service.user.Create(user); err != nil {
