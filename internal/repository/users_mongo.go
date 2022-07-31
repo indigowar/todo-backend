@@ -133,9 +133,18 @@ func (u userMongoRepo) UpdatePassword(id uuid.UUID, value string) error {
 	return nil
 }
 
-func (u userMongoRepo) UpdateUserName(uuid uuid.UUID, s string) error {
-	//TODO implement me
-	panic("implement me")
+func (u userMongoRepo) UpdateUserName(id uuid.UUID, value string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	filter := bson.D{{Key: "_id", Value: id.String()}}
+	updater := bson.D{{Key: "name", Value: value}}
+
+	_, err := u.collection.UpdateOne(ctx, filter, updater)
+	if err != nil {
+		return errors.New("failed to update the username")
+	}
+	return nil
 }
 
 func (u userMongoRepo) SetRefresh(uuid uuid.UUID, s string, time time.Time) error {
