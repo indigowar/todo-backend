@@ -6,14 +6,16 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func NewTodoRepo(client *mongo.Client) (TodoRepo, error) {
+func NewTodoRepo(database *mongo.Database) (TodoRepo, error) {
 	return &todoMongoRepo{
-		client: client,
+		lists: database.Collection("lists"),
+		elements: database.Collection("elements"),
 	}, nil
 }
 
 type todoMongoRepo struct {
-	client *mongo.Client
+	lists *mongo.Collection
+	elements *mongo.Collection
 }
 
 func (t todoMongoRepo) GetListByID(uuid uuid.UUID) (domain.List, error) {

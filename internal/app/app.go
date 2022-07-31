@@ -54,7 +54,7 @@ func Run(cfg *config.Config) {
 		log.Fatal(err)
 	}
 
-	todoRepository, err := repository.NewTodoRepo(mongo)
+	todoRepository, err := repository.NewTodoRepo(database)
 	if err != nil {
 		log.Fatal(err)
 	}
