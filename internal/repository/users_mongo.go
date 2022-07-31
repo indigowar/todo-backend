@@ -63,9 +63,20 @@ func (u *userMongoRepo) Get(id uuid.UUID) (domain.User, error) {
 	return result, nil
 }
 
-func (u userMongoRepo) GetByName(s string) (uuid.UUID, error) {
-	//TODO implement me
-	panic("implement me")
+func (u userMongoRepo) GetByName(name string) (uuid.UUID, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	filter := bson.D{{Key: "name", Value: name}}
+
+	var result mongoUser
+	if err := u.collection.FindOne(ctx, filter).Decode(&result); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return uuid.UUID{}, errors.New("user was not found")
+		}
+		return uuid.UUID{}, errors.New("internal error")
+	}
+	return result.Id(), nil
 }
 
 func (u userMongoRepo) Create(user domain.User) error {
