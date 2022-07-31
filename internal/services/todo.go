@@ -10,7 +10,6 @@ import (
 
 type TodoService interface {
 	// GetList - get list that user owns or get an error
-	//
 	GetList(token string, id uuid.UUID) (domain.List, error)
 	// GetLists - get list of users list
 	GetLists(string) ([]uuid.UUID, error)
@@ -43,16 +42,16 @@ func NewTodoService(users repository.UserRepo, todo repository.TodoRepo, manager
 func (service *todoService) GetList(token string, ownerId uuid.UUID) (domain.List, error) {
 	ownerId, err := service.verifyUserAccess(token)
 	if err != nil {
-		return domain.List{}, err
+		return domain.NewList("", uuid.UUID{}), err
 	}
 
 	list, err := service.todo.GetListByID(ownerId)
 	if err != nil {
-		return domain.List{}, errors.New("no access")
+		return domain.NewList("", uuid.UUID{}), errors.New("no access")
 	}
 
-	if list.Owner != ownerId {
-		return domain.List{}, errors.New("no access")
+	if list.Owner() != ownerId {
+		return domain.NewList("", uuid.UUID{}), errors.New("no access")
 	}
 
 	return list, nil
@@ -78,11 +77,7 @@ func (service *todoService) CreateList(token string, name string) error {
 		return err
 	}
 
-	err = service.todo.CreateList(domain.List{
-		Id:    uuid.New(),
-		Name:  name,
-		Owner: id,
-	})
+	err = service.todo.CreateList(domain.NewList(name, id))
 	if err != nil {
 		return errors.New("internal server error")
 	}
@@ -100,7 +95,7 @@ func (service *todoService) DeleteList(token string, id uuid.UUID) error {
 	if err != nil {
 		return err
 	}
-	if list.Owner != ownerId {
+	if list.Owner() != ownerId {
 		return errors.New("no access")
 	}
 
@@ -110,12 +105,12 @@ func (service *todoService) DeleteList(token string, id uuid.UUID) error {
 func (service *todoService) GetElement(token string, list, element uuid.UUID) (domain.Element, error) {
 	ownerId, err := service.verifyUserAccess(token)
 	if err != nil {
-		return domain.Element{}, err
+		return domain.NewElement(""), err
 	}
 
 	ownersLists, err := service.todo.GetListsByOwner(ownerId)
 	if err != nil {
-		return domain.Element{}, errors.New("internal error")
+		return domain.NewElement(""), errors.New("internal error")
 	}
 	listFound := false
 	for _, v := range ownersLists {
@@ -125,7 +120,7 @@ func (service *todoService) GetElement(token string, list, element uuid.UUID) (d
 		}
 	}
 	if !listFound {
-		return domain.Element{}, errors.New("no access")
+		return domain.NewElement(""), errors.New("no access")
 	}
 
 	return service.todo.GetElement(list, element)
@@ -152,11 +147,7 @@ func (service *todoService) AddElement(token string, list uuid.UUID, value strin
 		return errors.New("no access")
 	}
 
-	return service.todo.AddElement(list, domain.Element{
-		Id:    uuid.New(),
-		Value: value,
-		Done:  false,
-	})
+	return service.todo.AddElement(list, domain.NewElement(value))
 }
 
 func (service *todoService) DeleteElement(token string, list, element uuid.UUID) error {
