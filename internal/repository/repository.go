@@ -13,7 +13,7 @@ var (
 )
 
 type UserRepo interface {
-	Get(uuid.UUID) (*domain.User, error)
+	Get(uuid.UUID) (domain.User, error)
 	GetByName(string) (uuid.UUID, error)
 	Create(domain.User) error
 	Delete(uuid.UUID) error

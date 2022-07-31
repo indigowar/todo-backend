@@ -19,7 +19,7 @@ type userMongoRepo struct {
 	collection *mongo.Collection
 }
 
-func (u userMongoRepo) Get(uuid uuid.UUID) (*domain.User, error) {
+func (u userMongoRepo) Get(uuid uuid.UUID) (domain.User, error) {
 	//TODO implement me
 	panic("implement me")
 }

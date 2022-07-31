@@ -40,25 +40,24 @@ func NewUserService(r repository.UserRepo, todo repository.TodoRepo, a auth.Toke
 }
 
 func (service *userService) CreateUser(name, password string) (string, error) {
+	// prepare user entity
 	id := uuid.New()
-	refresh, expTime, err := service.auth.NewLongLive(id)
+	user, err := domain.NewUser(id, name, password)
 	if err != nil {
-		return "", errors.New("internal server error")
+		return "", err
 	}
 
-	user := domain.User{
-		Id:       id,
-		Name:     name,
-		Password: password,
-	}
-	user.Token.Value = refresh
-	user.Token.ExpiredAt = expTime
-
+	// create user in storage
 	if err := service.user.Create(user); err != nil {
 		return "", err
 	}
 
-	return user.Token.Value, nil
+	_, refresh, err := service.Login(name, password)
+	if err != nil {
+		return "", err
+	}
+
+	return refresh, nil
 }
 
 func (service *userService) DeleteUser(token string) error {
@@ -98,7 +97,7 @@ func (service *userService) GetName(token string) (string, error) {
 		return "", err
 	}
 
-	return user.Name, nil
+	return user.Name(), nil
 }
 
 func (service *userService) UpdatePassword(token, password string) error {
@@ -173,20 +172,20 @@ func (service *userService) Login(name, password string) (string, string, error)
 	}
 	user, _ := service.user.Get(id)
 
-	if user.Password != password {
+	if user.Password() != password {
 		return "", "", errors.New("login error")
 	}
 
-	refresh, expiredAt, err := service.auth.NewLongLive(user.Id)
+	refresh, expiredAt, err := service.auth.NewLongLive(user.Id())
 	if err != nil {
 		return "", "", errors.New("internal server error")
 	}
-	jwt, err := service.auth.NewJWT(user.Id)
+	jwt, err := service.auth.NewJWT(user.Id())
 	if err != nil {
 		return "", "", errors.New("internal server error")
 	}
 
-	if service.user.SetRefresh(user.Id, refresh, expiredAt) != nil {
+	if service.user.SetRefresh(user.Id(), refresh, expiredAt) != nil {
 		return "", "", errors.New("internal server error")
 	}
 
