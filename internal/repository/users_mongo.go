@@ -101,16 +101,24 @@ func (u userMongoRepo) Create(user domain.User) error {
 		},
 	}
 
-	result, err := u.collection.InsertOne(ctx, mUser)
+	_, err := u.collection.InsertOne(ctx, mUser)
 	if err != nil {
 		return errors.New("internal error, can't insert user")
 	}
 	return nil
 }
 
-func (u userMongoRepo) Delete(uuid uuid.UUID) error {
-	//TODO implement me
-	panic("implement me")
+func (u userMongoRepo) Delete(id uuid.UUID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	filter := bson.D{{Key: "_id", Value: id.String()}}
+
+	_, err := u.collection.DeleteOne(ctx, filter)
+	if err != nil {
+		return errors.New("failed to delete a user")
+	}
+	return nil
 }
 
 func (u userMongoRepo) UpdatePassword(uuid uuid.UUID, s string) error {
