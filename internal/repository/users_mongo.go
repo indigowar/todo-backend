@@ -2,9 +2,12 @@ package repository
 
 import (
 	"time"
+	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/indigowar/todo-backend/internal/domain"
 )
@@ -19,9 +22,45 @@ type userMongoRepo struct {
 	collection *mongo.Collection
 }
 
-func (u userMongoRepo) Get(uuid uuid.UUID) (domain.User, error) {
-	//TODO implement me
-	panic("implement me")
+// implements User interface
+type mongoUser struct {
+	UserID uuid.UUID `bson:"_id"`
+	UserName string `bson:"name"`
+	UserPassword string `bson:"password"`
+	Token struct {
+		Value string `bson:"value"`
+		ExpiredAt time.Time `bson:"expired_at"`
+	} `bson:"token"`
+}
+
+func (u mongoUser) Id() uuid.UUID {
+	return u.UserID
+}
+func (u mongoUser) Name() string {
+	return u.UserName
+}
+func (u mongoUser) Password() string {
+	return u.UserPassword
+}
+func (u mongoUser) TokenValue() string {
+	return u.Token.Value
+}
+func (u mongoUser) TokenExpiredTime() time.Time {
+	return u.Token.ExpiredAt
+}
+
+func (u *userMongoRepo) Get(id uuid.UUID) (domain.User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+	filter := bson.D{{Key: "_id", Value: id.String()}}
+	var result mongoUser
+	if err := u.collection.FindOne(ctx, filter).Decode(&result); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return domain.NewUser(uuid.UUID{}, "", ""), errors.New("user was not found")
+		}
+		return domain.NewUser(uuid.UUID{}, "", ""), errors.New("internal error")
+	}
+	return result, nil
 }
 
 func (u userMongoRepo) GetByName(s string) (uuid.UUID, error) {
