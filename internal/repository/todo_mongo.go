@@ -80,8 +80,25 @@ func (t todoMongoRepo) GetListByID(id uuid.UUID) (domain.List, error) {
 }
 
 func (t todoMongoRepo) CreateList(list domain.List) error {
-	//TODO implement me
-	panic("implement me")
+	if _, err := t.GetListByID(list.Id()); err == nil {
+		return errors.New("list already exists")
+	}
+
+	mList := mongoList {
+		ID: list.Id().String(),
+		ListName: list.Name(),
+		ListOwner: list.Owner().String(),
+	}
+	for i, v := range list.Elements() {
+		mList.ElementsID[i] = v.String()
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+	if _, err := t.lists.InsertOne(ctx, mList); err != nil {
+		return errors.New("internal error, failed to create a list")
+	}
+	return nil
 }
 
 func (t todoMongoRepo) GetListsByOwner(uuid uuid.UUID) ([]uuid.UUID, error) {
