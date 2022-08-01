@@ -101,9 +101,27 @@ func (t todoMongoRepo) CreateList(list domain.List) error {
 	return nil
 }
 
-func (t todoMongoRepo) GetListsByOwner(uuid uuid.UUID) ([]uuid.UUID, error) {
-	//TODO implement me
-	panic("implement me")
+func (t todoMongoRepo) GetListsByOwner(id uuid.UUID) ([]uuid.UUID, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	filter := bson.D{{Key: "_id", Value: id.String()}}
+
+	cursor, err := t.lists.Find(ctx, filter)
+	if err != nil {
+		return nil, errors.New("internal error")
+	}
+
+	var mLists []mongoList
+	if err = cursor.All(context.TODO(), &mLists); err != nil {
+		return nil, errors.New("internal error")
+	}
+
+	result := make([]uuid.UUID, len(mLists))
+	for i, v := range mLists {
+		result[i] = v.Id()
+	}
+	return result, nil
 }
 
 func (t todoMongoRepo) DeleteList(uuid uuid.UUID) error {
