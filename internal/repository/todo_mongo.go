@@ -1,9 +1,15 @@
 package repository
 
 import (
+	"context"
+	"time"
+	"errors"
+
 	"github.com/google/uuid"
-	"github.com/indigowar/todo-backend/internal/domain"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/indigowar/todo-backend/internal/domain"
 )
 
 func NewTodoRepo(database *mongo.Database) (TodoRepo, error) {
@@ -18,14 +24,14 @@ type mongoElement struct {
 	ElementValue string `bson:"value"`
 	Status  bool `bson:"done"`
 }
-func (e *mongoElement) Id() uuid.UUID {
+func (e mongoElement) Id() uuid.UUID {
 	id, _ := uuid.Parse(e.ID)
 	return id
 }
-func (e *mongoElement) Value() string {
+func (e mongoElement) Value() string {
 	return e.ElementValue
 }
-func (e *mongoElement) Done() bool {
+func (e mongoElement) Done() bool {
 	return e.Status
 }
 
@@ -35,18 +41,18 @@ type mongoList struct {
 	ListOwner    string `bson:"owner"`
 	ElementsID []string `bson:"elements"`
 }
-func (l *mongoList) Id() uuid.UUID {
+func (l mongoList) Id() uuid.UUID {
 	id, _ := uuid.Parse(l.ID)
 	return id
 }
-func (l *mongoList) Name() string {
+func (l mongoList) Name() string {
 	return l.ListName
 }
-func (l *mongoList) Owner() uuid.UUID {
+func (l mongoList) Owner() uuid.UUID {
 	id, _ := uuid.Parse(l.ListOwner)
 	return id
 }
-func (l *mongoList) Elements() []uuid.UUID {
+func (l mongoList) Elements() []uuid.UUID {
 	result := make([]uuid.UUID, len(l.ElementsID))
 	for i, v := range l.ElementsID {
 		id, _ := uuid.Parse(v)
@@ -60,9 +66,17 @@ type todoMongoRepo struct {
 	elements *mongo.Collection
 }
 
-func (t todoMongoRepo) GetListByID(uuid uuid.UUID) (domain.List, error) {
-	//TODO implement me
-	panic("implement me")
+func (t todoMongoRepo) GetListByID(id uuid.UUID) (domain.List, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	filter := bson.D{{Key: "_id", Value: id.String()}}
+
+	var result mongoList
+	if err := t.lists.FindOne(ctx, filter).Decode(&result); err != nil {
+		return domain.NewList("", uuid.UUID{}), errors.New("list is not found")
+	}
+	return result, nil
 }
 
 func (t todoMongoRepo) CreateList(list domain.List) error {
