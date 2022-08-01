@@ -24,7 +24,7 @@ type userMongoRepo struct {
 
 // implements User interface
 type mongoUser struct {
-	UserID uuid.UUID `bson:"_id"`
+	UserID string `bson:"_id"`
 	UserName string `bson:"name"`
 	UserPassword string `bson:"password"`
 	Token struct {
@@ -34,7 +34,8 @@ type mongoUser struct {
 }
 
 func (u mongoUser) Id() uuid.UUID {
-	return u.UserID
+	id, _ :=  uuid.Parse(u.UserID)
+	return id
 }
 func (u mongoUser) Name() string {
 	return u.UserName
@@ -92,7 +93,7 @@ func (u userMongoRepo) Create(user domain.User) error {
 	defer cancel()
 
 	mUser := mongoUser{
-		UserID: user.Id(),
+		UserID: user.Id().String(),
 		UserName: user.Name(),
 		UserPassword: user.Password(),
 	}
