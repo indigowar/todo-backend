@@ -147,12 +147,30 @@ func (u userMongoRepo) UpdateUserName(id uuid.UUID, value string) error {
 	return nil
 }
 
-func (u userMongoRepo) SetRefresh(uuid uuid.UUID, s string, time time.Time) error {
-	//TODO implement me
-	panic("implement me")
+func (u userMongoRepo) SetRefresh(id uuid.UUID, token string, expired_at time.Time) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	filter := bson.D{{Key: "_id", Value: id.String()}}
+	updater := bson.D{{Key: "token.value", Value: token}, {Key: "token.expired_at", Value: expired_at}}
+
+	_, err := u.collection.UpdateOne(ctx, filter, updater)
+	if err != nil {
+		return errors.New("failed to update token")
+	}
+	return nil
 }
 
-func (u userMongoRepo) GetByRefresh(s string) (uuid.UUID, time.Time, error) {
-	//TODO implement me
-	panic("implement me")
+func (u userMongoRepo) GetByRefresh(token string) (uuid.UUID, time.Time, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	filter := bson.D{{Key:"token.value", Value: token}}
+
+	var result mongoUser
+	if err := u.collection.FindOne(ctx, filter).Decode(&result); err != nil {
+		return uuid.UUID{}, time.Time{}, errors.New("user was not found by this token")
+	}
+
+	return result.Id(), result.TokenExpiredTime(), nil
 }
