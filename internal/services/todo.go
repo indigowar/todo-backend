@@ -103,27 +103,24 @@ func (service *todoService) DeleteList(token string, id uuid.UUID) error {
 }
 
 func (service *todoService) GetElement(token string, list, element uuid.UUID) (domain.Element, error) {
-	ownerId, err := service.verifyUserAccess(token)
+	l, err := service.GetList(token, list)
 	if err != nil {
 		return domain.NewElement(""), err
 	}
 
-	ownersLists, err := service.todo.GetListsByOwner(ownerId)
-	if err != nil {
-		return domain.NewElement(""), errors.New("internal error")
-	}
-	listFound := false
-	for _, v := range ownersLists {
-		if list == v {
-			listFound = true
+	containsElement := false
+	for _, v := range l.Elements() {
+		if v == element {
+			containsElement = true
 			break
 		}
 	}
-	if !listFound {
-		return domain.NewElement(""), errors.New("no access")
+
+	if !containsElement {
+		return domain.NewElement(""), errors.New("element was not found")
 	}
 
-	return service.todo.GetElement(list, element)
+	return service.todo.GetElement(element)
 }
 
 func (service *todoService) AddElement(token string, list uuid.UUID, value string) error {

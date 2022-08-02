@@ -38,7 +38,7 @@ type TodoRepo interface {
 	GetListsByOwner(uuid.UUID) ([]uuid.UUID, error)
 	DeleteList(uuid.UUID) error
 
-	GetElement(uuid.UUID, uuid.UUID) (domain.Element, error)
+	GetElement(uuid.UUID) (domain.Element, error)
 	AddElement(uuid.UUID, domain.Element) error
 	DeleteElement(uuid.UUID, uuid.UUID) error
 	ChangeStatus(uuid.UUID, uuid.UUID) error

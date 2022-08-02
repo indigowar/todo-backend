@@ -133,12 +133,21 @@ func (t todoMongoRepo) DeleteList(id uuid.UUID) error {
 	if _, err := t.lists.DeleteOne(ctx, filter); err != nil {
 		return errors.New("user was not found")
 	}
-	return nil	
+	return nil
 }
 
-func (t todoMongoRepo) GetElement(uuid uuid.UUID, uuid2 uuid.UUID) (domain.Element, error) {
-	//TODO implement me
-	panic("implement me")
+func (t todoMongoRepo) GetElement(id uuid.UUID) (domain.Element, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	filter := bson.D{{Key: "_id", Value: id.String()}}
+	var result mongoElement
+
+	if err := t.elements.FindOne(ctx, filter).Decode(&result); err != nil {
+		return domain.NewElement(""), errors.New("element was not found")
+	}
+
+	return result, nil
 }
 
 func (t todoMongoRepo) AddElement(uuid uuid.UUID, element domain.Element) error {
