@@ -2,9 +2,11 @@ package repository
 
 import (
 	"errors"
-	"github.com/google/uuid"
-	"github.com/indigowar/todo-backend/internal/domain"
 	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/indigowar/todo-backend/internal/domain"
 )
 
 var (
