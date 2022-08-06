@@ -152,9 +152,51 @@ func (t todoMongoRepo) GetElement(id uuid.UUID) (domain.Element, error) {
 	return result, nil
 }
 
-func (t todoMongoRepo) AddElement(uuid uuid.UUID, element domain.Element) error {
-	//TODO implement me
-	panic("implement me")
+func (t todoMongoRepo) AddElement(listId uuid.UUID, element domain.Element) error {
+	list, err := t.GetListByID(listId)
+	if err == nil {
+		return errors.New("list does not exist")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var mElement = mongoElement{
+		ID:           element.Id().String(),
+		ElementValue: element.Value(),
+		Status:       element.Done(),
+	}
+
+	elements := make([]string, len(list.Elements())+1)
+	for i, v := range list.Elements() {
+		elements[i] = v.String()
+	}
+	elements[len(elements)-1] = element.Id().String()
+
+	filter := bson.D{{Key: "_id", Value: listId.String()}}
+	updater := bson.D{{Key: "elements", Value: elements}}
+
+	var callback = func(sessCtx mongo.SessionContext) (interface{}, error) {
+		if _, err := t.elements.InsertOne(sessCtx, mElement); err != nil {
+			return nil, errors.New("failed to insert element")
+		}
+		if _, err := t.lists.UpdateOne(ctx, filter, updater); err != nil {
+			return nil, errors.New("failed to update list")
+		}
+		return nil, nil
+	}
+
+	session, err := t.elements.Database().Client().StartSession()
+	if err != nil {
+		return errors.New("failed to get into database")
+	}
+	defer session.EndSession(ctx)
+
+	_, err = session.WithTransaction(ctx, callback)
+	if err != nil {
+		return errors.New("failed to add element")
+	}
+	return nil
 }
 
 func (t todoMongoRepo) DeleteElement(uuid uuid.UUID, uuid2 uuid.UUID) error {
