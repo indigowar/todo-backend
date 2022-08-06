@@ -2,28 +2,29 @@ package repository
 
 import (
 	"context"
-	"time"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/indigowar/todo-backend/internal/domain"
 )
 
 func NewTodoRepo(database *mongo.Database) (TodoRepo, error) {
 	return &todoMongoRepo{
-		lists: database.Collection("lists"),
+		lists:    database.Collection("lists"),
 		elements: database.Collection("elements"),
 	}, nil
 }
 
 type mongoElement struct {
-	ID string `bson:"_id"`
+	ID           string `bson:"_id"`
 	ElementValue string `bson:"value"`
-	Status  bool `bson:"done"`
+	Status       bool   `bson:"done"`
 }
+
 func (e mongoElement) Id() uuid.UUID {
 	id, _ := uuid.Parse(e.ID)
 	return id
@@ -36,11 +37,12 @@ func (e mongoElement) Done() bool {
 }
 
 type mongoList struct {
-	ID string `bson:"_id"`
-	ListName     string `bson:"name"`
-	ListOwner    string `bson:"owner"`
+	ID         string   `bson:"_id"`
+	ListName   string   `bson:"name"`
+	ListOwner  string   `bson:"owner"`
 	ElementsID []string `bson:"elements"`
 }
+
 func (l mongoList) Id() uuid.UUID {
 	id, _ := uuid.Parse(l.ID)
 	return id
@@ -62,12 +64,12 @@ func (l mongoList) Elements() []uuid.UUID {
 }
 
 type todoMongoRepo struct {
-	lists *mongo.Collection
+	lists    *mongo.Collection
 	elements *mongo.Collection
 }
 
 func (t todoMongoRepo) GetListByID(id uuid.UUID) (domain.List, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	filter := bson.D{{Key: "_id", Value: id.String()}}
@@ -84,16 +86,16 @@ func (t todoMongoRepo) CreateList(list domain.List) error {
 		return errors.New("list already exists")
 	}
 
-	mList := mongoList {
-		ID: list.Id().String(),
-		ListName: list.Name(),
+	mList := mongoList{
+		ID:        list.Id().String(),
+		ListName:  list.Name(),
 		ListOwner: list.Owner().String(),
 	}
 	for i, v := range list.Elements() {
 		mList.ElementsID[i] = v.String()
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if _, err := t.lists.InsertOne(ctx, mList); err != nil {
 		return errors.New("internal error, failed to create a list")
@@ -102,7 +104,7 @@ func (t todoMongoRepo) CreateList(list domain.List) error {
 }
 
 func (t todoMongoRepo) GetListsByOwner(id uuid.UUID) ([]uuid.UUID, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	filter := bson.D{{Key: "_id", Value: id.String()}}
@@ -125,10 +127,10 @@ func (t todoMongoRepo) GetListsByOwner(id uuid.UUID) ([]uuid.UUID, error) {
 }
 
 func (t todoMongoRepo) DeleteList(id uuid.UUID) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	filter := bson.D{{Key:"_id", Value: id.String()}}
+	filter := bson.D{{Key: "_id", Value: id.String()}}
 
 	if _, err := t.lists.DeleteOne(ctx, filter); err != nil {
 		return errors.New("user was not found")
@@ -137,7 +139,7 @@ func (t todoMongoRepo) DeleteList(id uuid.UUID) error {
 }
 
 func (t todoMongoRepo) GetElement(id uuid.UUID) (domain.Element, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	filter := bson.D{{Key: "_id", Value: id.String()}}
