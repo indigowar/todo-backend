@@ -1,13 +1,13 @@
 package repository
 
 import (
-	"time"
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/indigowar/todo-backend/internal/domain"
 )
@@ -24,17 +24,17 @@ type userMongoRepo struct {
 
 // implements User interface
 type mongoUser struct {
-	UserID string `bson:"_id"`
-	UserName string `bson:"name"`
+	UserID       string `bson:"_id"`
+	UserName     string `bson:"name"`
 	UserPassword string `bson:"password"`
-	Token struct {
-		Value string `bson:"value"`
+	Token        struct {
+		Value     string    `bson:"value"`
 		ExpiredAt time.Time `bson:"expired_at"`
 	} `bson:"token"`
 }
 
 func (u mongoUser) Id() uuid.UUID {
-	id, _ :=  uuid.Parse(u.UserID)
+	id, _ := uuid.Parse(u.UserID)
 	return id
 }
 func (u mongoUser) Name() string {
@@ -50,24 +50,21 @@ func (u mongoUser) TokenExpiredTime() time.Time {
 	return u.Token.ExpiredAt
 }
 
-func (u *userMongoRepo) Get(id uuid.UUID) (domain.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
-	defer cancel()
+func (u *userMongoRepo) Get(ctx context.Context, id uuid.UUID) (domain.User, error) {
 	filter := bson.D{{Key: "_id", Value: id.String()}}
 	var result mongoUser
+
 	if err := u.collection.FindOne(ctx, filter).Decode(&result); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return domain.NewUser(uuid.UUID{}, "", ""), errors.New("user was not found")
 		}
 		return domain.NewUser(uuid.UUID{}, "", ""), errors.New("internal error")
 	}
+
 	return result, nil
 }
 
-func (u userMongoRepo) GetByName(name string) (uuid.UUID, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
-	defer cancel()
-
+func (u userMongoRepo) GetByName(ctx context.Context, name string) (uuid.UUID, error) {
 	filter := bson.D{{Key: "name", Value: name}}
 
 	var result mongoUser
@@ -80,21 +77,18 @@ func (u userMongoRepo) GetByName(name string) (uuid.UUID, error) {
 	return result.Id(), nil
 }
 
-func (u userMongoRepo) Create(user domain.User) error {
-	if _, err := u.Get(user.Id()); err == nil {
+func (u userMongoRepo) Create(ctx context.Context, user domain.User) error {
+	if _, err := u.Get(ctx, user.Id()); err == nil {
 		return errors.New("user already exists")
 	}
 
-	if _, err := u.GetByName(user.Name()); err == nil {
+	if _, err := u.GetByName(ctx, user.Name()); err == nil {
 		return errors.New("user already exists")
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
-	defer cancel()
 
 	mUser := mongoUser{
-		UserID: user.Id().String(),
-		UserName: user.Name(),
+		UserID:       user.Id().String(),
+		UserName:     user.Name(),
 		UserPassword: user.Password(),
 	}
 	mUser.Token.Value = user.TokenValue()
@@ -107,10 +101,7 @@ func (u userMongoRepo) Create(user domain.User) error {
 	return nil
 }
 
-func (u userMongoRepo) Delete(id uuid.UUID) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
-	defer cancel()
-
+func (u userMongoRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	filter := bson.D{{Key: "_id", Value: id.String()}}
 
 	_, err := u.collection.DeleteOne(ctx, filter)
@@ -120,10 +111,7 @@ func (u userMongoRepo) Delete(id uuid.UUID) error {
 	return nil
 }
 
-func (u userMongoRepo) UpdatePassword(id uuid.UUID, value string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
-	defer cancel()
-
+func (u userMongoRepo) UpdatePassword(ctx context.Context, id uuid.UUID, value string) error {
 	filter := bson.D{{Key: "_id", Value: id.String()}}
 	updater := bson.D{{Key: "password", Value: value}}
 
@@ -134,10 +122,7 @@ func (u userMongoRepo) UpdatePassword(id uuid.UUID, value string) error {
 	return nil
 }
 
-func (u userMongoRepo) UpdateUserName(id uuid.UUID, value string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
-	defer cancel()
-
+func (u userMongoRepo) UpdateUserName(ctx context.Context, id uuid.UUID, value string) error {
 	filter := bson.D{{Key: "_id", Value: id.String()}}
 	updater := bson.D{{Key: "name", Value: value}}
 
@@ -148,10 +133,7 @@ func (u userMongoRepo) UpdateUserName(id uuid.UUID, value string) error {
 	return nil
 }
 
-func (u userMongoRepo) SetRefresh(id uuid.UUID, token string, expired_at time.Time) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
-	defer cancel()
-
+func (u userMongoRepo) SetRefresh(ctx context.Context, id uuid.UUID, token string, expired_at time.Time) error {
 	filter := bson.D{{Key: "_id", Value: id.String()}}
 	updater := bson.D{{Key: "token.value", Value: token}, {Key: "token.expired_at", Value: expired_at}}
 
@@ -162,11 +144,8 @@ func (u userMongoRepo) SetRefresh(id uuid.UUID, token string, expired_at time.Ti
 	return nil
 }
 
-func (u userMongoRepo) GetByRefresh(token string) (uuid.UUID, time.Time, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
-	defer cancel()
-
-	filter := bson.D{{Key:"token.value", Value: token}}
+func (u userMongoRepo) GetByRefresh(ctx context.Context, token string) (uuid.UUID, time.Time, error) {
+	filter := bson.D{{Key: "token.value", Value: token}}
 
 	var result mongoUser
 	if err := u.collection.FindOne(ctx, filter).Decode(&result); err != nil {
