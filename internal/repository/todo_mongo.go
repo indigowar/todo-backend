@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
@@ -68,10 +67,7 @@ type todoMongoRepo struct {
 	elements *mongo.Collection
 }
 
-func (t todoMongoRepo) GetListByID(id uuid.UUID) (domain.List, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func (t todoMongoRepo) GetListByID(ctx context.Context, id uuid.UUID) (domain.List, error) {
 	filter := bson.D{{Key: "_id", Value: id.String()}}
 
 	var result mongoList
@@ -81,8 +77,8 @@ func (t todoMongoRepo) GetListByID(id uuid.UUID) (domain.List, error) {
 	return result, nil
 }
 
-func (t todoMongoRepo) CreateList(list domain.List) error {
-	if _, err := t.GetListByID(list.Id()); err == nil {
+func (t todoMongoRepo) CreateList(ctx context.Context, list domain.List) error {
+	if _, err := t.GetListByID(ctx, list.Id()); err == nil {
 		return errors.New("list already exists")
 	}
 
@@ -95,18 +91,13 @@ func (t todoMongoRepo) CreateList(list domain.List) error {
 		mList.ElementsID[i] = v.String()
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 	if _, err := t.lists.InsertOne(ctx, mList); err != nil {
 		return errors.New("internal error, failed to create a list")
 	}
 	return nil
 }
 
-func (t todoMongoRepo) GetListsByOwner(id uuid.UUID) ([]uuid.UUID, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func (t todoMongoRepo) GetListsByOwner(ctx context.Context, id uuid.UUID) ([]uuid.UUID, error) {
 	filter := bson.D{{Key: "_id", Value: id.String()}}
 
 	cursor, err := t.lists.Find(ctx, filter)
@@ -115,7 +106,7 @@ func (t todoMongoRepo) GetListsByOwner(id uuid.UUID) ([]uuid.UUID, error) {
 	}
 
 	var mLists []mongoList
-	if err = cursor.All(context.TODO(), &mLists); err != nil {
+	if err = cursor.All(ctx, &mLists); err != nil {
 		return nil, errors.New("internal error")
 	}
 
@@ -126,10 +117,7 @@ func (t todoMongoRepo) GetListsByOwner(id uuid.UUID) ([]uuid.UUID, error) {
 	return result, nil
 }
 
-func (t todoMongoRepo) DeleteList(id uuid.UUID) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func (t todoMongoRepo) DeleteList(ctx context.Context, id uuid.UUID) error {
 	filter := bson.D{{Key: "_id", Value: id.String()}}
 
 	if _, err := t.lists.DeleteOne(ctx, filter); err != nil {
@@ -138,10 +126,7 @@ func (t todoMongoRepo) DeleteList(id uuid.UUID) error {
 	return nil
 }
 
-func (t todoMongoRepo) GetElement(id uuid.UUID) (domain.Element, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func (t todoMongoRepo) GetElement(ctx context.Context, id uuid.UUID) (domain.Element, error) {
 	filter := bson.D{{Key: "_id", Value: id.String()}}
 	var result mongoElement
 
@@ -152,14 +137,11 @@ func (t todoMongoRepo) GetElement(id uuid.UUID) (domain.Element, error) {
 	return result, nil
 }
 
-func (t todoMongoRepo) AddElement(listId uuid.UUID, element domain.Element) error {
-	list, err := t.GetListByID(listId)
+func (t todoMongoRepo) AddElement(ctx context.Context, listId uuid.UUID, element domain.Element) error {
+	list, err := t.GetListByID(ctx, listId)
 	if err == nil {
 		return errors.New("list does not exist")
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
 
 	var mElement = mongoElement{
 		ID:           element.Id().String(),
@@ -180,7 +162,7 @@ func (t todoMongoRepo) AddElement(listId uuid.UUID, element domain.Element) erro
 		if _, err := t.elements.InsertOne(sessCtx, mElement); err != nil {
 			return nil, errors.New("failed to insert element")
 		}
-		if _, err := t.lists.UpdateOne(ctx, filter, updater); err != nil {
+		if _, err := t.lists.UpdateOne(sessCtx, filter, updater); err != nil {
 			return nil, errors.New("failed to update list")
 		}
 		return nil, nil
@@ -199,17 +181,17 @@ func (t todoMongoRepo) AddElement(listId uuid.UUID, element domain.Element) erro
 	return nil
 }
 
-func (t todoMongoRepo) DeleteElement(uuid uuid.UUID, uuid2 uuid.UUID) error {
+func (t todoMongoRepo) DeleteElement(ctx context.Context, uuid uuid.UUID, uuid2 uuid.UUID) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (t todoMongoRepo) ChangeStatus(uuid uuid.UUID, uuid2 uuid.UUID) error {
+func (t todoMongoRepo) ChangeStatus(ctx context.Context, uuid uuid.UUID, uuid2 uuid.UUID) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (t todoMongoRepo) RenameElement(uuid uuid.UUID, uuid2 uuid.UUID, s string) error {
+func (t todoMongoRepo) RenameElement(ctx context.Context, uuid uuid.UUID, uuid2 uuid.UUID, s string) error {
 	//TODO implement me
 	panic("implement me")
 }

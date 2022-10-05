@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -15,16 +16,16 @@ var (
 )
 
 type UserRepo interface {
-	Get(uuid.UUID) (domain.User, error)
-	GetByName(string) (uuid.UUID, error)
-	Create(domain.User) error
-	Delete(uuid.UUID) error
+	Get(context.Context, uuid.UUID) (domain.User, error)
+	GetByName(context.Context, string) (uuid.UUID, error)
+	Create(context.Context, domain.User) error
+	Delete(context.Context, uuid.UUID) error
 
-	UpdatePassword(uuid.UUID, string) error
-	UpdateUserName(uuid.UUID, string) error
+	UpdatePassword(context.Context, uuid.UUID, string) error
+	UpdateUserName(context.Context, uuid.UUID, string) error
 
-	SetRefresh(uuid.UUID, string, time.Time) error
-	GetByRefresh(string) (uuid.UUID, time.Time, error)
+	SetRefresh(context.Context, uuid.UUID, string, time.Time) error
+	GetByRefresh(context.Context, string) (uuid.UUID, time.Time, error)
 }
 
 var (
@@ -35,14 +36,14 @@ var (
 )
 
 type TodoRepo interface {
-	GetListByID(uuid.UUID) (domain.List, error)
-	CreateList(domain.List) error
-	GetListsByOwner(uuid.UUID) ([]uuid.UUID, error)
-	DeleteList(uuid.UUID) error
+	GetListByID(context.Context, uuid.UUID) (domain.List, error)
+	CreateList(context.Context, domain.List) error
+	GetListsByOwner(context.Context, uuid.UUID) ([]uuid.UUID, error)
+	DeleteList(context.Context, uuid.UUID) error
 
-	GetElement(uuid.UUID) (domain.Element, error)
-	AddElement(uuid.UUID, domain.Element) error
-	DeleteElement(uuid.UUID, uuid.UUID) error
-	ChangeStatus(uuid.UUID, uuid.UUID) error
-	RenameElement(uuid.UUID, uuid.UUID, string) error
+	GetElement(context.Context, uuid.UUID) (domain.Element, error)
+	AddElement(context.Context, uuid.UUID, domain.Element) error
+	DeleteElement(context.Context, uuid.UUID, uuid.UUID) error
+	ChangeStatus(context.Context, uuid.UUID, uuid.UUID) error
+	RenameElement(context.Context, uuid.UUID, uuid.UUID, string) error
 }
