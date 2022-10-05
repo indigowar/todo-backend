@@ -1,28 +1,31 @@
 package services
 
 import (
+	"context"
 	"errors"
+	"time"
+
 	"github.com/google/uuid"
+
 	"github.com/indigowar/todo-backend/internal/domain"
 	"github.com/indigowar/todo-backend/internal/repository"
 	"github.com/indigowar/todo-backend/pkg/auth"
-	"time"
 )
 
 type UserService interface {
 	// CreateUser - create a new user.
 	// Method returns the refresh token and an error.
-	CreateUser(name, password string) (string, error)
+	CreateUser(ctx context.Context, name, password string) (string, error)
 	// DeleteUser - deletes user from service,
 	// gets access token and returns an error.
-	DeleteUser(token string) error
+	DeleteUser(ctx context.Context, token string) error
 	// GetName - returns the name of token's owner or an error
-	GetName(token string) (string, error)
+	GetName(ctx context.Context, token string) (string, error)
 	// UpdatePassword - updates user's password by user's token,
 	// Returns an error
-	UpdatePassword(string, string) error
+	UpdatePassword(ctx context.Context, token string, password string) error
 	// Login - login in the account, get access and refresh tokens
-	Login(string, string) (string, string, error)
+	Login(ctx context.Context, name string, password string) (string, string, error)
 }
 
 type userService struct {
@@ -39,7 +42,7 @@ func NewUserService(r repository.UserRepo, todo repository.TodoRepo, a auth.Toke
 	}
 }
 
-func (service *userService) CreateUser(name, password string) (string, error) {
+func (service *userService) CreateUser(ctx context.Context, name, password string) (string, error) {
 	// prepare user entity
 	id := uuid.New()
 	user := domain.NewUser(id, name, password)
@@ -49,7 +52,7 @@ func (service *userService) CreateUser(name, password string) (string, error) {
 		return "", err
 	}
 
-	_, refresh, err := service.Login(name, password)
+	_, refresh, err := service.Login(ctx, name, password)
 	if err != nil {
 		return "", err
 	}
@@ -57,7 +60,7 @@ func (service *userService) CreateUser(name, password string) (string, error) {
 	return refresh, nil
 }
 
-func (service *userService) DeleteUser(token string) error {
+func (service *userService) DeleteUser(ctx context.Context, token string) error {
 	id, available, err := service.auth.Verify(token)
 
 	if err != nil {
@@ -78,7 +81,7 @@ func (service *userService) DeleteUser(token string) error {
 	return service.user.Delete(id)
 }
 
-func (service *userService) GetName(token string) (string, error) {
+func (service *userService) GetName(ctx context.Context, token string) (string, error) {
 	id, available, err := service.auth.Verify(token)
 
 	if err != nil {
@@ -97,7 +100,7 @@ func (service *userService) GetName(token string) (string, error) {
 	return user.Name(), nil
 }
 
-func (service *userService) UpdatePassword(token, password string) error {
+func (service *userService) UpdatePassword(ctx context.Context, token, password string) error {
 	id, available, err := service.auth.Verify(token)
 
 	if err != nil {
@@ -115,7 +118,7 @@ func (service *userService) UpdatePassword(token, password string) error {
 	return service.user.UpdatePassword(id, password)
 }
 
-func (service *userService) UpdateName(token, name string) error {
+func (service *userService) UpdateName(ctx context.Context, token, name string) error {
 	id, available, err := service.auth.Verify(token)
 
 	if err != nil {
@@ -129,7 +132,7 @@ func (service *userService) UpdateName(token, name string) error {
 	return service.user.UpdateUserName(id, name)
 }
 
-func (service *userService) NewAccessToken(refresh string) (string, error) {
+func (service *userService) NewAccessToken(ctx context.Context, refresh string) (string, error) {
 	//id, available, err := service.auth.Verify(refresh)
 	//
 	//if err != nil {
@@ -162,7 +165,7 @@ func (service *userService) NewAccessToken(refresh string) (string, error) {
 	return service.auth.NewJWT(id)
 }
 
-func (service *userService) Login(name, password string) (string, string, error) {
+func (service *userService) Login(ctx context.Context, name, password string) (string, string, error) {
 	id, err := service.user.GetByName(name)
 	if err != nil {
 		return "", "", errors.New("login error")
