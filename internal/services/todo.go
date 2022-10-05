@@ -1,8 +1,11 @@
 package services
 
 import (
+	"context"
 	"errors"
+
 	"github.com/google/uuid"
+
 	"github.com/indigowar/todo-backend/internal/domain"
 	"github.com/indigowar/todo-backend/internal/repository"
 	"github.com/indigowar/todo-backend/pkg/auth"
@@ -10,19 +13,19 @@ import (
 
 type TodoService interface {
 	// GetList - get list that user owns or get an error
-	GetList(token string, id uuid.UUID) (domain.List, error)
+	GetList(context.Context, string, uuid.UUID) (domain.List, error)
 	// GetLists - get list of users list
-	GetLists(string) ([]uuid.UUID, error)
+	GetLists(context.Context, string) ([]uuid.UUID, error)
 	// CreateList - create a new list for user
-	CreateList(string, string) error
+	CreateList(context.Context, string, string) error
 	// DeleteList - delete a list by it's ID
-	DeleteList(string, uuid.UUID) error
+	DeleteList(context.Context, string, uuid.UUID) error
 	// GetElement - get element of list
-	GetElement(string, uuid.UUID, uuid.UUID) (domain.Element, error)
-	AddElement(string, uuid.UUID, string) error
-	DeleteElement(string, uuid.UUID, uuid.UUID) error
-	ChangeElementStatus(string, uuid.UUID, uuid.UUID) error
-	RenameElement(string, uuid.UUID, uuid.UUID, string) error
+	GetElement(context.Context, string, uuid.UUID, uuid.UUID) (domain.Element, error)
+	AddElement(context.Context, string, uuid.UUID, string) error
+	DeleteElement(context.Context, string, uuid.UUID, uuid.UUID) error
+	ChangeElementStatus(context.Context, string, uuid.UUID, uuid.UUID) error
+	RenameElement(context.Context, string, uuid.UUID, uuid.UUID, string) error
 }
 
 type todoService struct {
@@ -39,7 +42,7 @@ func NewTodoService(users repository.UserRepo, todo repository.TodoRepo, manager
 	}
 }
 
-func (service *todoService) GetList(token string, ownerId uuid.UUID) (domain.List, error) {
+func (service *todoService) GetList(ctx context.Context, token string, ownerId uuid.UUID) (domain.List, error) {
 	ownerId, err := service.verifyUserAccess(token)
 	if err != nil {
 		return domain.NewList("", uuid.UUID{}), err
@@ -57,7 +60,7 @@ func (service *todoService) GetList(token string, ownerId uuid.UUID) (domain.Lis
 	return list, nil
 }
 
-func (service *todoService) GetLists(token string) ([]uuid.UUID, error) {
+func (service *todoService) GetLists(ctx context.Context, token string) ([]uuid.UUID, error) {
 	id, err := service.verifyUserAccess(token)
 	if err != nil {
 		return nil, err
@@ -71,7 +74,7 @@ func (service *todoService) GetLists(token string) ([]uuid.UUID, error) {
 	return lists, nil
 }
 
-func (service *todoService) CreateList(token string, name string) error {
+func (service *todoService) CreateList(ctx context.Context, token string, name string) error {
 	id, err := service.verifyUserAccess(token)
 	if err != nil {
 		return err
@@ -85,7 +88,7 @@ func (service *todoService) CreateList(token string, name string) error {
 	return nil
 }
 
-func (service *todoService) DeleteList(token string, id uuid.UUID) error {
+func (service *todoService) DeleteList(ctx context.Context, token string, id uuid.UUID) error {
 	ownerId, err := service.verifyUserAccess(token)
 	if err != nil {
 		return err
@@ -102,8 +105,8 @@ func (service *todoService) DeleteList(token string, id uuid.UUID) error {
 	return service.todo.DeleteList(id)
 }
 
-func (service *todoService) GetElement(token string, list, element uuid.UUID) (domain.Element, error) {
-	l, err := service.GetList(token, list)
+func (service *todoService) GetElement(ctx context.Context, token string, list, element uuid.UUID) (domain.Element, error) {
+	l, err := service.GetList(ctx, token, list)
 	if err != nil {
 		return domain.NewElement(""), err
 	}
@@ -123,7 +126,7 @@ func (service *todoService) GetElement(token string, list, element uuid.UUID) (d
 	return service.todo.GetElement(element)
 }
 
-func (service *todoService) AddElement(token string, list uuid.UUID, value string) error {
+func (service *todoService) AddElement(ctx context.Context, token string, list uuid.UUID, value string) error {
 	ownerId, err := service.verifyUserAccess(token)
 	if err != nil {
 		return err
@@ -147,7 +150,7 @@ func (service *todoService) AddElement(token string, list uuid.UUID, value strin
 	return service.todo.AddElement(list, domain.NewElement(value))
 }
 
-func (service *todoService) DeleteElement(token string, list, element uuid.UUID) error {
+func (service *todoService) DeleteElement(ctx context.Context, token string, list, element uuid.UUID) error {
 	ownerId, err := service.verifyUserAccess(token)
 	if err != nil {
 		return err
@@ -172,7 +175,7 @@ func (service *todoService) DeleteElement(token string, list, element uuid.UUID)
 	return service.todo.DeleteElement(list, element)
 }
 
-func (service *todoService) ChangeElementStatus(token string, list, element uuid.UUID) error {
+func (service *todoService) ChangeElementStatus(ctx context.Context, token string, list, element uuid.UUID) error {
 	ownerId, err := service.verifyUserAccess(token)
 	if err != nil {
 		return err
@@ -197,7 +200,7 @@ func (service *todoService) ChangeElementStatus(token string, list, element uuid
 	return service.todo.ChangeStatus(list, element)
 }
 
-func (service *todoService) RenameElement(token string, list, element uuid.UUID, value string) error {
+func (service *todoService) RenameElement(ctx context.Context, token string, list, element uuid.UUID, value string) error {
 	ownerId, err := service.verifyUserAccess(token)
 	if err != nil {
 		return err
