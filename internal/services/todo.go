@@ -42,13 +42,13 @@ func NewTodoService(users repository.UserRepo, todo repository.TodoRepo, manager
 	}
 }
 
-func (service *todoService) GetList(ctx context.Context, token string, ownerId uuid.UUID) (domain.List, error) {
+func (service *todoService) GetList(ctx context.Context, token string, listId uuid.UUID) (domain.List, error) {
 	ownerId, err := service.verifyUserAccess(token)
 	if err != nil {
 		return domain.NewList("", uuid.UUID{}), err
 	}
 
-	list, err := service.todo.GetListByID(ownerId)
+	list, err := service.todo.GetListByID(listId)
 	if err != nil {
 		return domain.NewList("", uuid.UUID{}), errors.New("no access")
 	}
