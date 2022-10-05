@@ -48,7 +48,7 @@ func (service *todoService) GetList(ctx context.Context, token string, listId uu
 		return domain.NewList("", uuid.UUID{}), err
 	}
 
-	list, err := service.todo.GetListByID(listId)
+	list, err := service.todo.GetListByID(ctx, listId)
 	if err != nil {
 		return domain.NewList("", uuid.UUID{}), errors.New("no access")
 	}
@@ -66,7 +66,7 @@ func (service *todoService) GetLists(ctx context.Context, token string) ([]uuid.
 		return nil, err
 	}
 
-	lists, err := service.todo.GetListsByOwner(id)
+	lists, err := service.todo.GetListsByOwner(ctx, id)
 	if err != nil {
 		return nil, errors.New("internal server error")
 	}
@@ -80,7 +80,7 @@ func (service *todoService) CreateList(ctx context.Context, token string, name s
 		return err
 	}
 
-	err = service.todo.CreateList(domain.NewList(name, id))
+	err = service.todo.CreateList(ctx, domain.NewList(name, id))
 	if err != nil {
 		return errors.New("internal server error")
 	}
@@ -94,7 +94,7 @@ func (service *todoService) DeleteList(ctx context.Context, token string, id uui
 		return err
 	}
 
-	list, err := service.todo.GetListByID(id)
+	list, err := service.todo.GetListByID(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (service *todoService) DeleteList(ctx context.Context, token string, id uui
 		return errors.New("no access")
 	}
 
-	return service.todo.DeleteList(id)
+	return service.todo.DeleteList(ctx, id)
 }
 
 func (service *todoService) GetElement(ctx context.Context, token string, list, element uuid.UUID) (domain.Element, error) {
@@ -123,7 +123,7 @@ func (service *todoService) GetElement(ctx context.Context, token string, list, 
 		return domain.NewElement(""), errors.New("element was not found")
 	}
 
-	return service.todo.GetElement(element)
+	return service.todo.GetElement(ctx, element)
 }
 
 func (service *todoService) AddElement(ctx context.Context, token string, list uuid.UUID, value string) error {
@@ -132,7 +132,7 @@ func (service *todoService) AddElement(ctx context.Context, token string, list u
 		return err
 	}
 
-	ownersLists, err := service.todo.GetListsByOwner(ownerId)
+	ownersLists, err := service.todo.GetListsByOwner(ctx, ownerId)
 	if err != nil {
 		return errors.New("internal error")
 	}
@@ -147,7 +147,7 @@ func (service *todoService) AddElement(ctx context.Context, token string, list u
 		return errors.New("no access")
 	}
 
-	return service.todo.AddElement(list, domain.NewElement(value))
+	return service.todo.AddElement(ctx, list, domain.NewElement(value))
 }
 
 func (service *todoService) DeleteElement(ctx context.Context, token string, list, element uuid.UUID) error {
@@ -156,7 +156,7 @@ func (service *todoService) DeleteElement(ctx context.Context, token string, lis
 		return err
 	}
 
-	ownersLists, err := service.todo.GetListsByOwner(ownerId)
+	ownersLists, err := service.todo.GetListsByOwner(ctx, ownerId)
 	if err != nil {
 		return errors.New("internal error")
 	}
@@ -172,7 +172,7 @@ func (service *todoService) DeleteElement(ctx context.Context, token string, lis
 		return errors.New("no access")
 	}
 
-	return service.todo.DeleteElement(list, element)
+	return service.todo.DeleteElement(ctx, list, element)
 }
 
 func (service *todoService) ChangeElementStatus(ctx context.Context, token string, list, element uuid.UUID) error {
@@ -181,7 +181,7 @@ func (service *todoService) ChangeElementStatus(ctx context.Context, token strin
 		return err
 	}
 
-	ownersLists, err := service.todo.GetListsByOwner(ownerId)
+	ownersLists, err := service.todo.GetListsByOwner(ctx, ownerId)
 	if err != nil {
 		return errors.New("internal error")
 	}
@@ -197,7 +197,7 @@ func (service *todoService) ChangeElementStatus(ctx context.Context, token strin
 		return errors.New("no access")
 	}
 
-	return service.todo.ChangeStatus(list, element)
+	return service.todo.ChangeStatus(ctx, list, element)
 }
 
 func (service *todoService) RenameElement(ctx context.Context, token string, list, element uuid.UUID, value string) error {
@@ -206,7 +206,7 @@ func (service *todoService) RenameElement(ctx context.Context, token string, lis
 		return err
 	}
 
-	ownersLists, err := service.todo.GetListsByOwner(ownerId)
+	ownersLists, err := service.todo.GetListsByOwner(ctx, ownerId)
 	if err != nil {
 		return errors.New("internal error")
 	}
@@ -222,7 +222,7 @@ func (service *todoService) RenameElement(ctx context.Context, token string, lis
 		return errors.New("no access")
 	}
 
-	return service.todo.RenameElement(list, element, value)
+	return service.todo.RenameElement(ctx, list, element, value)
 }
 
 func (service *todoService) verifyUserAccess(token string) (uuid.UUID, error) {

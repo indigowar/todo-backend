@@ -48,7 +48,7 @@ func (service *userService) CreateUser(ctx context.Context, name, password strin
 	user := domain.NewUser(id, name, password)
 
 	// create user in storage
-	if err := service.user.Create(user); err != nil {
+	if err := service.user.Create(ctx, user); err != nil {
 		return "", err
 	}
 
@@ -71,14 +71,14 @@ func (service *userService) DeleteUser(ctx context.Context, token string) error 
 		return errors.New("token is expired")
 	}
 
-	lists, err := service.todo.GetListsByOwner(id)
+	lists, err := service.todo.GetListsByOwner(ctx, id)
 	if err == nil {
 		for _, v := range lists {
-			_ = service.todo.DeleteList(v)
+			_ = service.todo.DeleteList(ctx, v)
 		}
 	}
 
-	return service.user.Delete(id)
+	return service.user.Delete(ctx, id)
 }
 
 func (service *userService) GetName(ctx context.Context, token string) (string, error) {
@@ -92,7 +92,7 @@ func (service *userService) GetName(ctx context.Context, token string) (string, 
 		return "", errors.New("token is expired")
 	}
 
-	user, err := service.user.Get(id)
+	user, err := service.user.Get(ctx, id)
 	if err != nil {
 		return "", err
 	}
@@ -115,7 +115,7 @@ func (service *userService) UpdatePassword(ctx context.Context, token, password 
 		return errors.New("password too simple")
 	}
 
-	return service.user.UpdatePassword(id, password)
+	return service.user.UpdatePassword(ctx, id, password)
 }
 
 func (service *userService) UpdateName(ctx context.Context, token, name string) error {
@@ -129,30 +129,15 @@ func (service *userService) UpdateName(ctx context.Context, token, name string) 
 		return errors.New("token is expired")
 	}
 
-	return service.user.UpdateUserName(id, name)
+	return service.user.UpdateUserName(ctx, id, name)
 }
 
 func (service *userService) NewAccessToken(ctx context.Context, refresh string) (string, error) {
-	//id, available, err := service.auth.Verify(refresh)
-	//
-	//if err != nil {
-	//	return "", errors.New("invalid token")
-	//}
-	//
-	//if !available {
-	//	return "", errors.New("token is expired")
-	//}
-	//
-	//if token, err := service.auth.NewJWT(id); err != nil {
-	//	return "", errors.New("server internal error")
-	//} else {
-	//	return token, nil
-	//}
 	if refresh == "" {
 		return "", errors.New("invalid token")
 	}
 
-	id, expired, err := service.user.GetByRefresh(refresh)
+	id, expired, err := service.user.GetByRefresh(ctx, refresh)
 
 	if err != nil {
 		return "", errors.New("invalid token")
@@ -166,11 +151,11 @@ func (service *userService) NewAccessToken(ctx context.Context, refresh string) 
 }
 
 func (service *userService) Login(ctx context.Context, name, password string) (string, string, error) {
-	id, err := service.user.GetByName(name)
+	id, err := service.user.GetByName(ctx, name)
 	if err != nil {
 		return "", "", errors.New("login error")
 	}
-	user, _ := service.user.Get(id)
+	user, _ := service.user.Get(ctx, id)
 
 	if user.Password() != password {
 		return "", "", errors.New("login error")
@@ -185,7 +170,7 @@ func (service *userService) Login(ctx context.Context, name, password string) (s
 		return "", "", errors.New("internal server error")
 	}
 
-	if service.user.SetRefresh(user.Id(), refresh, expiredAt) != nil {
+	if service.user.SetRefresh(ctx, user.Id(), refresh, expiredAt) != nil {
 		return "", "", errors.New("internal server error")
 	}
 
