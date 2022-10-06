@@ -2,23 +2,28 @@ name: Build and test Go
 on: [push, pull_request]
 jobs:
   build:
-    name: Setup
     runs-on: ubuntu-latest
+
     steps:
-      - name: Set up Go 1.18
-        uses: actions/setup-go@v1
+      - uses: actions/checkout@v2
+
+      - name: Setup Go
+        uses: actions/setupgo@v2
         with:
-          go-version: 1.18
+          go-version: "1.18.0"
 
-      - name: Check out source code
-        uses: actions/checkout@v1
+      - name: Install dependencies
+        run: |
+          go version
+          go get -u golang.org/x/lint/golint
 
-      - name: Build application
-				env:
-					GOPROXY: "https://proxy.golang.org"
+      - name: Run build
         run: go build cmd/server/server.go
 
-      - name: Test
-				env:
-					GOPROXY: "https://proxy.golang.org"
+      - name: Run vet & lint
+        run: |
+          go vet .
+          golint .
+
+      - name: Run testing
         run: go test -v .
