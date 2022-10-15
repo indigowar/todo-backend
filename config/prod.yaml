@@ -1,3 +1,0 @@
-auth:
-  accessTokenTTL: 5m
-  refreshTokenTTL: 30d
