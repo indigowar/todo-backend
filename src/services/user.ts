@@ -7,26 +7,26 @@ import { NewResultErr } from '../utils/result';
 
 export default class UserSvc implements UserService {
 	Create (request: NamePasswordRequest): Promise<RefreshResult> {
-		return Promise.resolve(NewResultErr(new Error('UnImplemented')));
+		return Promise.resolve(NewResultErr(new Error('Not Implemented')));
 	}
 
 	Delete (request: TokenRequest): Promise<StatusResult> {
-		return Promise.resolve(NewResultErr(new Error('UnImplemented')));
+		return Promise.resolve(NewResultErr(new Error('Not Implemented')));
 	}
 
 	GetName (request: TokenRequest): Promise<NameResult> {
-		return Promise.resolve(NewResultErr(new Error('UnImplemented')));
+		return Promise.resolve(NewResultErr(new Error('Not Implemented')));
 	}
 
 	Login (request: NamePasswordRequest): Promise<LoginResult> {
-		return Promise.resolve(NewResultErr(new Error('UnImplemented')));
+		return Promise.resolve(NewResultErr(new Error('Not Implemented')));
 	}
 
 	UpdateName (request: UpdateNameRequest): Promise<StatusResult> {
-		return Promise.resolve(NewResultErr(new Error('UnImplemented')));
+		return Promise.resolve(NewResultErr(new Error('Not Implemented')));
 	}
 
 	UpdatePassword (request: UpdatePasswordRequest): Promise<StatusResult> {
-		return Promise.resolve(NewResultErr(new Error('UnImplemented')));
+		return Promise.resolve(NewResultErr(new Error('Not Implemented')));
 	}
 }
