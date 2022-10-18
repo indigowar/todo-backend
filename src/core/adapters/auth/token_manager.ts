@@ -6,7 +6,7 @@ export type TokenInformation = { id: string, time: number };
 export interface TokenManagerImplementation {
 	CreatToken (info: TokenInformation, sign_key: string): Result<string>;
 
-	Verify (token: string, sign_key: string): Result<TokenInformation>;
+	ReadToken (token: string, sign_key: string): Result<TokenInformation>;
 }
 
 export class TokenManager {
@@ -30,7 +30,7 @@ export class TokenManager {
 	}
 
 	public Verify (token: string): Result<TokenInformation> {
-		return this.impl.Verify(token, this.sign_key);
+		return this.impl.ReadToken(token, this.sign_key);
 	}
 
 	constructor (impl: TokenManagerImplementation, accessRule: Rule<number>, refreshRule: Rule<number>, signKeyRule: Rule<string>) {
