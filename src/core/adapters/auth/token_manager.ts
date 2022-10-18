@@ -10,7 +10,7 @@ export interface TokenManagerImplementation {
 }
 
 export class TokenManager {
-	NewAccessToken (id: string): Result<string> {
+	public NewAccessToken (id: string): Result<string> {
 		const exp_time = new Date().setTime(Date.now() + this.access_exp);
 		const info: TokenInformation = {
 			id: id,
@@ -19,7 +19,7 @@ export class TokenManager {
 		return this.impl.CreatToken(info, this.sign_key);
 	}
 
-	NewRefreshToken (id: string): Result<string> {
+	public NewRefreshToken (id: string): Result<string> {
 		const exp_time = new Date().setTime(Date.now() + this.refresh_exp);
 		const info: TokenInformation = {
 			id: id,
@@ -29,7 +29,7 @@ export class TokenManager {
 		return this.impl.CreatToken(info, this.sign_key);
 	}
 
-	Verify (token: string): Result<TokenInformation> {
+	public Verify (token: string): Result<TokenInformation> {
 		return this.impl.Verify(token, this.sign_key);
 	}
 
